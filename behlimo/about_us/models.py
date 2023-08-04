@@ -22,6 +22,7 @@ class AboutUs(models.Model):
                                  validators=[validate_image_size])
     gallery5 = models.ImageField(upload_to="setting/", null=True, blank=True, verbose_name=" تصویر 5 گالری",
                                  validators=[validate_image_size])
+    is_enabled = models.BooleanField(verbose_name='enabled', default=False)
 
     class Meta:
         verbose_name = ("تنظیمات درباره ما")
@@ -29,3 +30,25 @@ class AboutUs(models.Model):
 
     def __str__(self):
         return "تنظیمات درباره ما"
+    
+    def save(self, *args, **kwargs):
+
+        """
+        Override the save method.
+
+        If this object is enabled, disable all other enabled AboutUs
+        objects, except for this object itself. This ensures there
+        is only one enabled AboutUs object.
+
+        Then call the super save method to actually save this object.
+        """
+
+        if self.is_enabled:
+            AboutUs.objects.filter(
+                is_enabled=True
+            ).exclude(
+                id=self.id
+            ).update(
+                is_enabled=False
+            )
+        super().save(*args, **kwargs)
