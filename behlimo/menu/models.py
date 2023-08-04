@@ -1,18 +1,10 @@
 from django.db import models
-from category.models import Category
+from ..category.models import Category
 from django.urls import reverse
 from django.utils.html import format_html
-from django.core.exceptions import ValidationError
-from django.conf import settings
+from ..base.validators import validate_image_size
 
 
-# limit size image and raise error
-def validate_image_size(value):
-    limit = settings.FILE_UPLOAD_MAX_MEMORY_SIZE
-    if value.size > limit:
-        raise ValidationError(f'حجم فایل بیشتر از {limit/1024/1024:.2f} MB است')
-    
-# Create your models here.
 class Menu(models.Model):
 
     titel = models.CharField(max_length=300,null=True,blank=True,verbose_name='نام آیتم')
