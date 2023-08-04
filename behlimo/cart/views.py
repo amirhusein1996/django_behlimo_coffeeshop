@@ -1,9 +1,9 @@
-from django.db.models import F
+from django.db.models import F, Sum
 from django.http import Http404
 from django.shortcuts import render, redirect, get_object_or_404
 from django.core.exceptions import ObjectDoesNotExist
 from django.urls import reverse_lazy
-from django.views.generic import View, RedirectView
+from django.views.generic import View, RedirectView, TemplateView
 from ..menu.models import Menu
 from .models import Cart, CartItem
 from ..tables.models import Table
@@ -91,21 +91,38 @@ def cart(request, total=0, quantity=0, cart_items=None):
     return render(request, 'cart.html', context=context)
 
 
-def checkout(request, total=0, quantity=0, cart_items=None):
-    try:
-        cart = Cart.objects.get(cart_id=_get_cart_id(request))
-        tabels = Table.objects.exclude(is_reserved=True)
-        cart_items = CartItem.objects.filter(cart=cart, is_active=True)
-        for cart_item in cart_items:
-            total += (cart_item.menu.price * cart_item.quantity)
-            quantity += cart_item.quantity
-    except ObjectDoesNotExist:
-        pass
+class CheckOutView(TemplateView):
+    template_name = 'checkout.html'
 
-    context = {
-        'total': total,
-        'quantity': quantity,
-        'cart_items': cart_items,
-        'tabels': tabels,
-    }
-    return render(request, 'checkout.html', context)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(self.get_tables())
+        context.update(self.get_cart_context())
+        return context
+
+    def get_tables(self):
+        tables = Table.objects.exclude(is_reserved=True)
+        return {
+            'tables': tables,
+        }
+
+    def get_cart_context(self):
+        cart_id = _get_cart_id(self.request)
+        cart_items = CartItem.objects.filter(cart_id=cart_id, is_active=True)
+
+        return {
+            'total': self.get_total_price(cart_items),
+            'quantity': self.get_quantity(cart_items),
+            'cart_items': cart_items,
+        }
+
+    def get_total_price(self, cart_items):
+        total_price = cart_items.annotate(
+            item_price=F('menu__price') * F('quantity')
+        ).aggregate(total_price=Sum('item_price'))['total_price'] or 0
+
+        return total_price
+
+    def get_quantity(self, cart_items):
+        quantity = cart_items.aggregate(Sum('quantity'))['quantity__sum']
+        return quantity
