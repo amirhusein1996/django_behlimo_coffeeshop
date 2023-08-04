@@ -5,7 +5,7 @@ from ..base.validators import validate_image_size
 
 
 class Category(models.Model):
-    titel = models.CharField(max_length=200, verbose_name='عنوان دسته بندی')
+    title = models.CharField(max_length=200, verbose_name='عنوان دسته بندی')
     slug = models.CharField(unique=True, max_length=255, verbose_name='نام کوتاه')
     image = models.ImageField(upload_to='media/', verbose_name='تصویر دسته بندی', validators=[validate_image_size])
     description = models.TextField(verbose_name='توضیحات دسته بندی')
@@ -23,4 +23,4 @@ class Category(models.Model):
     image_tag.short_description = 'تصویر'
 
     def __str__(self):
-        return self.titel
+        return self.title
