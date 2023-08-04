@@ -17,7 +17,7 @@ class Cart(models.Model):
 class CartItem(models.Model):
     menu = models.ForeignKey(Menu, on_delete=models.CASCADE, verbose_name='آیتم منو')
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, verbose_name='سبد')
-    quantity = models.SmallIntegerField(verbose_name='تعداد', default=0)
+    quantity = models.SmallIntegerField(verbose_name='تعداد')
     is_active = models.BooleanField(default=True, verbose_name='فعال')
 
     class Meta:
