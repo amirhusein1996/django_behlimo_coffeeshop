@@ -56,12 +56,20 @@ def remove_cart(request, menu_id):
     return redirect('cart')
 
 
-def remove_cart_item(request, menu_id):
-    cart = Cart.objects.get(cart_id=_get_cart_id(request))
-    menu = get_object_or_404(Menu, id=menu_id)
-    cart_item = CartItem.objects.get(menu=menu, cart=cart)
-    cart_item.delete()
-    return redirect('cart')
+class RemoveCartItemRedirectView(RedirectView):
+    url = reverse_lazy('cart')
+
+    def get(self, request, menu_id, *args, **kwargs):
+        has_menu = Menu.objects.filter(menu_id=menu_id).exists()
+        if not has_menu:
+            raise Http404
+        self.remove_cart_item()
+        return super().get(request, *args, **kwargs)
+
+    def remove_cart_item(self):
+        cart_id = _get_cart_id(self.request)
+        menu_id = self.kwargs.get('menu_id')
+        CartItem.objects.filter(menu_id=menu_id, cart_id=cart_id).delete()
 
 
 def cart(request, total=0, quantity=0, cart_items=None):
