@@ -1,70 +1,79 @@
+from django.db.models import F
+from django.http import Http404
 from django.shortcuts import render, redirect, get_object_or_404
 from django.core.exceptions import ObjectDoesNotExist
-from menu.models import Menu
+from django.urls import reverse_lazy
+from django.views.generic import View, RedirectView
+from ..menu.models import Menu
 from .models import Cart, CartItem
-from tabel.models import Table
+from ..tables.models import Table
 
-# Create your views here.
 
-def _cart_id(request):
-    cart = request.session.session_key
-    if not cart:
-       cart = request.session.create()
-    return cart
+def _get_cart_id(request):
+    cart_id = request.session.session_key
+    if not cart_id:
+        cart_id = request.session.create()
+        Cart.objects.create(cart_id=cart_id)
+    return cart_id
 
-def add_cart(request, menu_id):
-    menu = Menu.objects.get(id=menu_id)
-    try:
-        cart = Cart.objects.get(cart_id=_cart_id(request))
-    except Cart.DoesNotExist:
-        cart = Cart.objects.create(
-            cart_id = _cart_id(request)
+
+class AddCartRedirectView(RedirectView):
+    url = reverse_lazy('cart')
+
+    def get(self, request, menu_id, *args, **kwargs):
+        has_menu = Menu.objects.filter(menu_id=menu_id).exists()
+        if not has_menu:
+            raise Http404
+        self.add_quantity()
+        return super().get(request, *args, **kwargs)
+
+    def add_quantity(self):
+        cart_id = _get_cart_id(self.request)
+        menu_id = self.kwargs.get('menu_id')
+
+        cart_item, created = CartItem.objects.get_or_create(
+            menu_id=menu_id,
+            cart=cart_id,
+            defaults={'quantity': 1},
         )
-    
-    cart.save()
 
-    try:
-        cart_item = CartItem.objects.get(menu=menu, cart=cart)
-        cart_item.quantity += 1
-        cart_item.save()
-    except CartItem.DoesNotExist:
-        cart_item = CartItem.objects.create(
-            menu = menu,
-            quantity = 1,
-            cart = cart,
-        )
-        cart_item.save()
-    return redirect('cart')
+        if not created:
+            CartItem.objects.filter(
+                menu_id=menu_id,
+                cart=cart_id,
+            ).update(quantity=F('quantity') + 1)
 
-def remove_cart(request,menu_id):
-    cart = Cart.objects.get(cart_id=_cart_id(request))
+
+def remove_cart(request, menu_id):
+    cart = Cart.objects.get(cart_id=_get_cart_id(request))
     menu = get_object_or_404(Menu, id=menu_id)
     cart_item = CartItem.objects.get(menu=menu, cart=cart)
     if cart_item.quantity > 1:
-        cart_item.quantity -=1
+        cart_item.quantity -= 1
         cart_item.save()
     else:
         cart_item.delete()
     return redirect('cart')
 
-def remove_cart_item(request,menu_id):
-    cart = Cart.objects.get(cart_id=_cart_id(request))
+
+def remove_cart_item(request, menu_id):
+    cart = Cart.objects.get(cart_id=_get_cart_id(request))
     menu = get_object_or_404(Menu, id=menu_id)
     cart_item = CartItem.objects.get(menu=menu, cart=cart)
     cart_item.delete()
     return redirect('cart')
 
+
 def cart(request, total=0, quantity=0, cart_items=None):
     try:
-        cart = Cart.objects.get(cart_id=_cart_id(request))
+        cart = Cart.objects.get(cart_id=_get_cart_id(request))
         cart_items = CartItem.objects.filter(cart=cart, is_active=True)
         for cart_item in cart_items:
             total += (cart_item.menu.price * cart_item.quantity)
             quantity += cart_item.quantity
     except ObjectDoesNotExist:
         pass
-    
-        
+
     context = {
         'total': total,
         'quantity': quantity,
@@ -73,22 +82,22 @@ def cart(request, total=0, quantity=0, cart_items=None):
     }
     return render(request, 'cart.html', context=context)
 
-def checkout(request,total=0, quantity=0, cart_items=None):
+
+def checkout(request, total=0, quantity=0, cart_items=None):
     try:
-        cart = Cart.objects.get(cart_id=_cart_id(request))
-        tabels = Table.objects.exclude(is_reserved=True)    
+        cart = Cart.objects.get(cart_id=_get_cart_id(request))
+        tabels = Table.objects.exclude(is_reserved=True)
         cart_items = CartItem.objects.filter(cart=cart, is_active=True)
         for cart_item in cart_items:
             total += (cart_item.menu.price * cart_item.quantity)
             quantity += cart_item.quantity
     except ObjectDoesNotExist:
         pass
-    
-        
+
     context = {
         'total': total,
         'quantity': quantity,
         'cart_items': cart_items,
         'tabels': tabels,
     }
-    return render (request, 'checkout.html',context)
+    return render(request, 'checkout.html', context)
