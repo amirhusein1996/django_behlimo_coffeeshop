@@ -7,7 +7,7 @@ from ..base.validators import validate_image_size
 
 class Menu(models.Model):
 
-    titel = models.CharField(max_length=300,null=True,blank=True,verbose_name='نام آیتم')
+    title = models.CharField(max_length=300,null=True,blank=True,verbose_name='نام آیتم')
     slug = models.CharField(unique=True, max_length=455, verbose_name='نام کوتاه')
     image = models.ImageField(upload_to='menu/', verbose_name='تصویر آیتم',validators=[validate_image_size])
     materials = description = models.TextField(verbose_name='مواد تشکیل دهنده')
@@ -32,6 +32,6 @@ class Menu(models.Model):
         return reverse('item_detail', args=[self.category.slug, self.slug])
 
     def __str__(self):
-        return self.titel
+        return self.title
 
     
