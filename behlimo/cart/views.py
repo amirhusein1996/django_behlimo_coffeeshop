@@ -4,17 +4,10 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.core.exceptions import ObjectDoesNotExist
 from django.urls import reverse_lazy
 from django.views.generic import View, RedirectView, TemplateView
+from ..base.cart import get_cart_id
 from ..menu.models import Menu
 from .models import Cart, CartItem
 from ..tables.models import Table
-
-
-def _get_cart_id(request):
-    cart_id = request.session.session_key
-    if not cart_id:
-        cart_id = request.session.create()
-        Cart.objects.create(cart_id=cart_id)
-    return cart_id
 
 
 class AddCartRedirectView(RedirectView):
@@ -28,7 +21,7 @@ class AddCartRedirectView(RedirectView):
         return super().get(request, *args, **kwargs)
 
     def increment_quantity(self):
-        cart_id = _get_cart_id(self.request)
+        cart_id = get_cart_id(self.request)
         menu_id = self.kwargs.get('menu_id')
 
         cart_item, created = CartItem.objects.get_or_create(
@@ -55,7 +48,7 @@ class RemoveCartRedirectView(RedirectView):
         return super().get(request, *args, **kwargs)
 
     def decrement_quantity(self):
-        cart_id = _get_cart_id(self.request)
+        cart_id = get_cart_id(self.request)
         menu_id = self.kwargs.get('menu_id')
 
         is_updated = CartItem.objects.filter(
@@ -86,14 +79,14 @@ class RemoveCartItemRedirectView(RedirectView):
         return super().get(request, *args, **kwargs)
 
     def remove_cart_item(self):
-        cart_id = _get_cart_id(self.request)
+        cart_id = get_cart_id(self.request)
         menu_id = self.kwargs.get('menu_id')
         CartItem.objects.filter(menu_id=menu_id, cart_id=cart_id).delete()
 
 
 def cart(request, total=0, quantity=0, cart_items=None):
     try:
-        cart = Cart.objects.get(cart_id=_get_cart_id(request))
+        cart = Cart.objects.get(cart_id=get_cart_id(request))
         cart_items = CartItem.objects.filter(cart=cart, is_active=True)
         for cart_item in cart_items:
             total += (cart_item.menu.price * cart_item.quantity)
@@ -126,7 +119,7 @@ class CheckOutView(TemplateView):
         }
 
     def get_cart_context(self):
-        cart_id = _get_cart_id(self.request)
+        cart_id = get_cart_id(self.request)
         cart_items = CartItem.objects.filter(cart_id=cart_id, is_active=True)
 
         return {
