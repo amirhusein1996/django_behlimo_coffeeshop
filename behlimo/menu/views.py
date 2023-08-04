@@ -15,6 +15,7 @@ class MenuListView(ListView):
     template_name = 'home.html'
     context_object_name = 'items'
     paginate_by = 3
+    ordering = ['id']
 
     def get_queryset(self):
         category_slug = self.kwargs.get('category_slug')
