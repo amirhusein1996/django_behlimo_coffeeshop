@@ -1,12 +1,12 @@
 from django.shortcuts import render ,get_object_or_404 , redirect
 from .models import Menu
-from category.models import Category
-from cart.models import CartItem
-from cart.views import _cart_id
+from ..category.models import Category
+from ..cart.models import CartItem
+from ..cart.views import _get_cart_id
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.http import HttpResponse, Http404
-from comment.forms import CommentModelForm
-from comment.models import Comment
+from ..comments.forms import CommentModelForm
+from ..comments.models import Comment
 
 
 
@@ -39,7 +39,7 @@ def item_detail(request,category_slug,item_slug):
                
     try:
         single_item = Menu.objects.get(category__slug=category_slug, slug=item_slug)
-        in_cart = CartItem.objects.filter(cart__cart_id = _cart_id(request), menu=single_item).exists()
+        in_cart = CartItem.objects.filter(cart__cart_id = _get_cart_id(request), menu=single_item).exists()
 
     except Exception as e:
         raise e
