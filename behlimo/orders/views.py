@@ -7,7 +7,7 @@ from .forms import OrderForm
 
 
 def place_order(request, total=0, quantity=0):
-    cart_items = CartItem.objects.filter(cart__cart_id=_cart_id(request), is_active=True)
+    cart_items = CartItem.objects.filter(cart__cart_id=get_cart_id(request), is_active=True)
     cart_count = cart_items.count()
     if cart_count <= 0:
         return redirect('menu')
@@ -47,7 +47,7 @@ def place_order(request, total=0, quantity=0):
             data.customer_number = customer_number
             data.save()
 
-            CartItem.objects.filter(cart__cart_id=_cart_id(request), is_active=True).delete()
+            CartItem.objects.filter(cart__cart_id=get_cart_id(request), is_active=True).delete()
             return redirect('checkout')
 
         else:
