@@ -1,8 +1,7 @@
 from django.db import models
-from menu.models import Menu
+from ..menu.models import Menu
 
 
-# Create your models here.
 class Cart(models.Model):
     cart_id = models.CharField(max_length=250, blank=True, verbose_name='شناسه سبد', null=True)
     dete_added = models.DateField(auto_now_add=True, verbose_name='تاریخ ادد')
