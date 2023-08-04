@@ -1,5 +1,8 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from django.views.generic import ListView, TemplateView
+from django.urls import reverse_lazy
+from django.views.generic import ListView, TemplateView, DetailView
+from django.views.generic.edit import ModelFormMixin, FormMixin
+
 from .models import Menu
 from ..category.models import Category
 from ..cart.models import CartItem
@@ -32,36 +35,49 @@ class MenuListView(ListView):
         return context
 
 
-def item_detail(request, category_slug, item_slug):
-    try:
-        single_item = Menu.objects.get(category__slug=category_slug, slug=item_slug)
-        in_cart = CartItem.objects.filter(cart__cart_id=_get_cart_id(request), menu=single_item).exists()
-
-    except Exception as e:
-        raise e
-
+class ItemDetailView(FormMixin, DetailView):
+    model = Menu
     form_class = CommentModelForm
-    comments = Comment.objects.filter(is_active=True, menu=single_item)
-    comment_count = comments.count()
-    if request.method == "POST":
-        form = form_class(data=request.POST)
-        if form.is_valid():
-            comment_obj = form.save(commit=False)
-            comment_obj.menu = single_item
+    success_url = reverse_lazy('messages')
+    context_object_name = 'single_item'
+    template_name = 'item_detail.html'
 
-            comment_obj.save()
-            request.session['current_url'] = request.get_full_path()
-            return redirect('messages')
+    def get_object(self, queryset=None):
+        category_slug = self.kwargs.get('category_slug')
+        item_slug = self.kwargs.get('item_slug')
+        return get_object_or_404(
+            klass=self.model,
+            category__slug=category_slug,
+            slug=item_slug
+        )
 
-    context = {
-        'single_item': single_item,
-        'in_cart': in_cart,
-        'comments': comments,
-        'comment_count': comment_count
+    def form_valid(self, form):
+        comment_obj = form.save(commit=False)
+        comment_obj.menu = self.object
+        comment_obj.save()
+        self.request.session['current_url'] = self.request.get_full_path()
+        return super().form_valid(form)
 
-    }
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(self.get_comments())
+        context.update(self.get_in_cart())
+        return context
 
-    return render(request, 'item_detail.html', context=context)
+    def get_comments(self):
+        comments = Comment.objects.filter(is_active=True, menu=self.object)
+        comment_count = comments.count()
+        return {
+            'comments': comments,
+            'comment_count': comment_count
+        }
+
+    def get_in_cart(self):
+        cart_id = _get_cart_id(self.request)
+        in_cart = CartItem.objects.filter(cart__cart_id=cart_id, menu=self.object).exists()
+        return {
+            'in_cart': in_cart,
+        }
 
 
 class SearchView(ListView):
@@ -84,7 +100,6 @@ class SearchView(ListView):
             }
         )
         return context
-
 
 
 class MessageView(TemplateView):
