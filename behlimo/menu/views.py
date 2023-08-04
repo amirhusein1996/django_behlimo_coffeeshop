@@ -24,10 +24,10 @@ class MenuListView(ListView):
         category_slug = self.kwargs.get('category_slug')
         if category_slug:
             if Category.objects.filter(slug__iexact=category_slug).exists():
-                return self.model.objects.filter(category_slug=category_slug)
+                return self.model.objects.filter(category_slug=category_slug).order_by(*self.ordering)
             raise Http404
 
-        return self.model.objects.all()
+        return super().get_queryset()
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super().get_context_data(**kwargs)
