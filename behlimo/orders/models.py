@@ -44,7 +44,7 @@ class OrderItem(models.Model):
         verbose_name_plural = "آیتم های سفارش"
 
     def __str__(self):
-        return f'{self.menu.titel} - {self.quantity}'
+        return f'{self.menu.title} - {self.quantity}'
 
     def save(self, *args, **kwargs):
         # محاسبه قیمت آیتم براساس تعداد
