@@ -64,18 +64,27 @@ def item_detail(request, category_slug, item_slug):
     return render(request, 'item_detail.html', context=context)
 
 
-def search(request):
-    if 'keyword' in request.GET:
-        keyword = request.GET['keyword']
-        if keyword:
-            items = Menu.objects.order_by('id').filter(titel__icontains=keyword)
-            items_count = items.count()
-            context = {
-                'items': items,
-                'items_count': items_count,
+class SearchView(ListView):
+    model = Menu
+    template_name = 'home.html'
+    context_object_name = 'items'
+    ordering = ['id']
 
+    def get_queryset(self):
+        keyword = self.request.GET.get('keyword')
+        if keyword:
+            return self.model.objects.filter(title__contains=keyword)
+        raise Http404
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                'items_count': self.get_queryset().count()
             }
-    return render(request, 'home.html', context or {})
+        )
+        return context
+
 
 
 class MessageView(TemplateView):
