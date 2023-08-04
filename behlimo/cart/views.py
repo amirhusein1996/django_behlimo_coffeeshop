@@ -44,16 +44,35 @@ class AddCartRedirectView(RedirectView):
             ).update(quantity=F('quantity') + 1)
 
 
-def remove_cart(request, menu_id):
-    cart = Cart.objects.get(cart_id=_get_cart_id(request))
-    menu = get_object_or_404(Menu, id=menu_id)
-    cart_item = CartItem.objects.get(menu=menu, cart=cart)
-    if cart_item.quantity > 1:
-        cart_item.quantity -= 1
-        cart_item.save()
-    else:
-        cart_item.delete()
-    return redirect('cart')
+class RemoveCartRedirectView(RedirectView):
+    url = reverse_lazy('cart')
+
+    def get(self, request, menu_id, *args, **kwargs):
+        has_menu = Menu.objects.filter(menu_id=menu_id).exists()
+        if not has_menu:
+            raise Http404
+        self.decrement_quantity()
+        return super().get(request, *args, **kwargs)
+
+    def decrement_quantity(self):
+        cart_id = _get_cart_id(self.request)
+        menu_id = self.kwargs.get('menu_id')
+
+        is_updated = CartItem.objects.filter(
+            menu_id=menu_id,
+            cart_id=cart_id,
+            quantity__gt=0  # Ensures the quantity is always greater than 0 (1 or more)
+        ).update(
+            quantity=F('quantity') - 1
+        )
+
+        if not is_updated:
+            # It means the quantity of the object is 0
+            CartItem.objects.filter(
+                menu_id=menu_id,
+                cart_id=cart_id,
+                quantity__lte=0
+            ).delete()
 
 
 class RemoveCartItemRedirectView(RedirectView):
