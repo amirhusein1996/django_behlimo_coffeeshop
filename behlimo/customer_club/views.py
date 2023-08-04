@@ -1,14 +1,12 @@
-from django.shortcuts import render
+from django.views.generic import FormView
 from .forms import CustomerForm
-from django.contrib import messages
 
 
-def register_customer(request):
-    if request.method == 'POST':
-        form = CustomerForm(request.POST)
-        if form.is_valid():
-            form.save()
-            
-    else:
-        form = CustomerForm()
-    return render(request, 'home.html', {'form': form})
+class RegisterCustomerView(FormView):
+    form_class = CustomerForm
+    template_name = 'home.html'
+    success_url = '/'
+
+    def form_valid(self, form):
+        form.save()
+        super().form_valid(form)
