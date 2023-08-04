@@ -42,6 +42,13 @@ class ItemDetailView(FormMixin, DetailView):
     context_object_name = 'single_item'
     template_name = 'item_detail.html'
 
+    def post(self, request, *args, **kwargs):
+        form = self.get_form()
+        if form.is_valid():
+            return self.form_valid(form)
+        else:
+            return self.form_invalid(form)
+
     def get_object(self, queryset=None):
         category_slug = self.kwargs.get('category_slug')
         item_slug = self.kwargs.get('item_slug')
