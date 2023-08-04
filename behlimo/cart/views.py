@@ -24,10 +24,10 @@ class AddCartRedirectView(RedirectView):
         has_menu = Menu.objects.filter(menu_id=menu_id).exists()
         if not has_menu:
             raise Http404
-        self.add_quantity()
+        self.increment_quantity()
         return super().get(request, *args, **kwargs)
 
-    def add_quantity(self):
+    def increment_quantity(self):
         cart_id = _get_cart_id(self.request)
         menu_id = self.kwargs.get('menu_id')
 
