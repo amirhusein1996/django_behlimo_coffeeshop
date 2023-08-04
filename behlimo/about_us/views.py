@@ -1,12 +1,20 @@
-from django.shortcuts import render
+from django.http import Http404
+from django.views.generic import DetailView
 from .models import AboutUs
-# Create your views here.
 
 
-def aboutus(request):
-    
-    aboutus = AboutUs.objects.first()
-    context ={
-        'aboutus': aboutus
-    }
-    return render(request,'aboutus.html',context)
+class AboutUsPage(DetailView):
+    model = AboutUs
+    context_object_name = 'aboutus'
+
+    def get_object(self, queryset=None):
+        try:
+            return self.model.objects.get(
+                is_enabled=True
+            )
+
+        except self.model.DoesNotExist:
+            raise Http404
+
+        except self.model.MultipleObjectsReturned:
+            raise Http404  # It's possible to implement other logic
