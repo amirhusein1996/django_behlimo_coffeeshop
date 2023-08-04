@@ -4,10 +4,10 @@ from . import views
 
 urlpatterns = [
     path('', views.cart, name='cart'),
-    path('add_cart/<int:menu_id>/',views.add_cart,name='add_cart'),
-    path('remove_cart/<int:menu_id>/',views.remove_cart,name='remove_cart'),
-    path('remove_cart_item/<int:menu_id>/',views.remove_cart_item,name='remove_cart_item'),
-    path('checkout/', views.checkout, name='checkout')
+    path('add_cart/<int:menu_id>/',views.AddCartRedirectView.as_view(), name='add_cart'),
+    path('remove_cart/<int:menu_id>/',views.RemoveCartItemRedirectView.as_view(), name='remove_cart'),
+    path('remove_cart_item/<int:menu_id>/',views.RemoveCartItemRedirectView.as_view(), name='remove_cart_item'),
+    path('checkout/', views.CheckOutView.as_view(), name='checkout')
    
 ]
 
