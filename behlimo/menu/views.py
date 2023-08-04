@@ -1,5 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from django.views.generic import ListView
+from django.views.generic import ListView, TemplateView
 from .models import Menu
 from ..category.models import Category
 from ..cart.models import CartItem
@@ -69,20 +69,29 @@ def search(request):
         if keyword:
             items = Menu.objects.order_by('id').filter(titel__icontains=keyword)
             items_count = items.count()
-    context = {
-        'items': items,
-        'items_count': items_count,
+            context = {
+                'items': items,
+                'items_count': items_count,
 
-    }
-    return render(request, 'home.html', context)
+            }
+    return render(request, 'home.html', context or {})
 
 
-def messages(request):
-    url = request.session.get('current_url')
-    if not url:
-        raise Http404
-    request.session['current_url'] = None
-    context = {
-        'url': url,
-    }
-    return render(request, 'messages.html', context)
+class MessageView(TemplateView):
+    template_name = "messages.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                'url': self.get_url()
+            }
+        )
+        return context
+
+    def get_url(self):
+        url = self.request.session.get('current_url')
+        if not url:
+            raise Http404
+        self.request.session['current_url'] = None
+        return url
